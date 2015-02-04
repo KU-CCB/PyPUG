@@ -1,0 +1,9 @@
+Necessary Classes
+
+- Web request handler for pulling data from PubChem
+- Database manager for storing cache (flat-file vs. database)
+  - Error Logging:
+    - Errors should be cumulative: Don't exit unless the error is fatal
+    - Warnings should be issued cumulatively as well.
+- Client interface object (which uses wrm) to retrieve data and abstract away requests
+  and cache management
