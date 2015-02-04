@@ -1,22 +1,19 @@
 #!/bin/python
 
-from lib.requestHandler import get, post
-import lib.requestErrors as errors
-import pandas as pd
 import sys
+sys.path.append("./src")
 if sys.version_info[0] < 3:
     from StringIO import StringIO
 else:
     from io import StringIO
+from requestHandler import get, post
+import requestErrors
+import pandas as pd
 
 PROLOG = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
 ENCODING = "utf-8"
+PugRestException = requestErrors.PugRestException
 
-def wipeCache():
-  """
-  Delete all locally stored files
-  """
-  pass
 
 def getAIDsFromGeneID(geneID, usepost=True):
   """
@@ -25,16 +22,13 @@ def getAIDsFromGeneID(geneID, usepost=True):
   @param usepost  Boolean value indicating whether post or get should be used.
   """
   response = ""
-  try:
-    if usepost:
-      url = PROLOG + "/assay/target/GeneID/aids/TXT"
-      payload = {'geneid':geneID}
-      response = post(url, payload).split('\n')
-    else:
-      url = PROLOG + ("/assay/target/GeneID/%s/aids/TXT" % geneID)
-      response = get(url).split('\n')
-  except errors.PUGRESTException as e:
-    errors.handleRequestError(e)
+  if usepost:
+    url = PROLOG + "/assay/target/GeneID/aids/TXT"
+    payload = {'geneid':geneID}
+    response = post(url, payload).split('\n')
+  else:
+    url = PROLOG + ("/assay/target/GeneID/%s/aids/TXT" % geneID)
+    response = get(url).split('\n')
   return [id.encode(ENCODING) for id in response]
 
 def getAIDsFromGeneIDs(geneIDs, usepost=True):
@@ -66,14 +60,11 @@ def getAssayFromSIDs(AID, SIDs=[]):
     url = PROLOG + "/assay/aid/CSV"
     payload = {'aid':AID, 'sid':",".join(SIDs[pos:pos+groupSz])}
     pos = pos + groupSz + 1
-    try:
-      if len(response) == 0:
-        response += post(url, payload)
-      else: 
-        data = post(url, payload)
-        response += data[data.index('\n'):]
-    except errors.PUGRESTException as e:
-      errors.handleRequestError(e)
+    if len(response) == 0:
+      response += post(url, payload)
+    else: 
+      data = post(url, payload)
+      response += data[data.index('\n'):]
   response = StringIO(response.encode(ENCODING))
   return pd.DataFrame.from_csv(response, index_col=False, header=0)
 
@@ -84,17 +75,23 @@ def getAssayFromAID(AID, usepost=True):
   @param usepost  Boolean value indicating whether post or get should be used.
   """
   response = ""
-  try:
-    if usepost:
-      url = PROLOG + "/assay/aid/CSV"
-      payload = {'aid':AID}
-      response = StringIO(post(url, payload).encode(ENCODING))
-    else:
-      url = PROLOG + "/assay/aid/%s/CSV" % AID
-      response = StringIO(get(url).encode(ENCODING))
-  except errors.PUGRESTException as e:
-    errors.handleRequestError(e)
+  if usepost:
+    url = PROLOG + "/assay/aid/CSV"
+    payload = {'aid':AID}
+    response = StringIO(post(url, payload).encode(ENCODING))
+  else:
+    url = PROLOG + "/assay/aid/%s/CSV" % AID
+    response = StringIO(get(url).encode(ENCODING))
   return pd.DataFrame.from_csv(response, index_col=False, header=0)
+
+def getAssayDescriptionFromAID(AID):
+  """
+  Return the assay description for a given AID
+  @param AID  The AID to search on
+  """
+  url = PROLOG + ("/assay/aid/%s/description/JSON" % AID)
+  response = get(url) # needs to be parsed into an object
+  return response
 
 def getAssaysFromAIDs(AIDs, usepost=True):
   """
@@ -108,24 +105,6 @@ def getAssaysFromAIDs(AIDs, usepost=True):
     assays.append(getAssayFromAID(AID, usepost))
   return assays
 
-def getSIDsFromAID(AID, usepost=True):
-  """
-  Returns a list of SIDs associated with an AID.
-  @param geneID The geneID to search on
-  """
-  response = ""
-  try:
-    if usepost:
-      url = PROLOG + "/assay/aid/sids/TXT"
-      payload = {'aid':AID}
-      response = post(url, payload).split('\n')
-    else:
-      url = PROLOG + ("/assay/aid/%s/sids/TXT" % AID)
-      response = get(url).split('\n')
-  except errors.PUGRESTException as e:
-    errors.handleRequestError(e)
-  return [id.encode(ENCODING) for id in response]
-
 def getAssaysFromGeneID(geneID):
   """
   Returns a pandas DataFrame containing the assay data for all assays 
@@ -135,32 +114,32 @@ def getAssaysFromGeneID(geneID):
   AIDs = getAIDsFromGeneID(geneID)
   return getAssaysFromAIDs(AIDs)
 
+def getSIDsFromAID(AID, usepost=True):
+  """
+  Returns a list of SIDs associated with an AID.
+  @param geneID The geneID to search on
+  """
+  response = ""
+  if usepost:
+    url = PROLOG + "/assay/aid/sids/TXT"
+    payload = {'aid':AID}
+    response = post(url, payload).split('\n')
+  else:
+    url = PROLOG + ("/assay/aid/%s/sids/TXT" % AID)
+    response = get(url).split('\n')
+  return [id.encode(ENCODING) for id in response]
+
 def getCIDsFromAID(AID, usepost=True):
   """
   Return a list of pubchem cids that correspond to an AID.
   @param AID  The AID to search on.
   @param usepost  Boolean value indicating whether post or get should be used.
   """
-  try:
-    if usepost:
-      url = PROLOG + "/assay/aid/cids/TXT"
-      payload = {'aid':AID}
-      response = post(url, payload).split('\n')
-    else:
-      url = PROLOG + ("/assay/aid/%s/cids/TXT" % AID)
-      response = get(url).split('\n')
-  except errors.PUGRESTException as e:
-    errors.handleRequestError(e)
+  if usepost:
+    url = PROLOG + "/assay/aid/cids/TXT"
+    payload = {'aid':AID}
+    response = post(url, payload).split('\n')
+  else:
+    url = PROLOG + ("/assay/aid/%s/cids/TXT" % AID)
+    response = get(url).split('\n')
   return [id.encode(ENCODING) for id in response]
-
-def getAssayDescriptionFromAID(AID):
-  """
-  Return the assay description for a given AID
-  @param AID  The AID to search on
-  """
-  url = PROLOG + ("/assay/aid/%s/description/JSON" % AID)
-  try: 
-    response = get(url) # needs to be parsed into an object
-  except errors.PUGRESTException as e:
-      errors.handleRequestError(e)
-  return response
