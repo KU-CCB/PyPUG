@@ -1,5 +1,10 @@
 #!/bin/python
 
+# every function should return a dictionary mapping the search key to it's returned
+# value as either a list or a dataframe.
+
+# Need to implement getSIDsFromAIDs
+
 import sys
 sys.path.append("./src")
 if sys.version_info[0] < 3:
@@ -13,7 +18,6 @@ import pandas as pd
 PROLOG = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
 ENCODING = "utf-8"
 PugRestException = requestErrors.PugRestException
-
 
 def getAIDsFromGeneID(geneID, usepost=True):
   """
@@ -31,6 +35,7 @@ def getAIDsFromGeneID(geneID, usepost=True):
     response = get(url).split('\n')
   return [id.encode(ENCODING) for id in response]
 
+# Should this be function?
 def getAIDsFromGeneIDs(geneIDs, usepost=True):
   """
   Returns a list of lists of AIDs in the same order as geneIDs
@@ -41,6 +46,7 @@ def getAIDsFromGeneIDs(geneIDs, usepost=True):
     AIDs.append(getAIDsFromGeneID(geneID, usepost))
   return AIDs
 
+# Should this be a function?
 def getAssayFromSIDs(AID, SIDs=[]):
   """
   Returns a pandas DataFrame containing the assay data for AID. This is useful
@@ -93,22 +99,24 @@ def getAssayDescriptionFromAID(AID):
   response = get(url) # needs to be parsed into an object
   return response
 
+# Should this be a function?
 def getAssaysFromAIDs(AIDs, usepost=True):
   """
-  Returns a list of pandas DataFrames containing the assay data for all 
-  assays corresponding to AIDs in the same order as AIDs.
+  Returns a dictionary of pandas DataFrames containing the assay data for all 
+  assays mapped to AIDs
   @param AIDs  The list of AIDs to search on.
   @param usepost  Boolean value indicating whether post or get should be used.
   """
-  assays = []
+  assays = {}
   for AID in AIDs:
-    assays.append(getAssayFromAID(AID, usepost))
+    assays[AID] = getAssayFromAID(AID, usepost)
   return assays
 
+# Should this be a function?
 def getAssaysFromGeneID(geneID):
   """
-  Returns a pandas DataFrame containing the assay data for all assays 
-  corresponding to the given geneID
+  Returns a dictionary of pandas DataFrames containing the assay data for all 
+  assays with AIDs assocated to geneID mapped to their respective AIDs.
   @param geneID  The geneID to search on
   """
   AIDs = getAIDsFromGeneID(geneID)
