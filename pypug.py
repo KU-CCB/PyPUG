@@ -1,10 +1,5 @@
 #!/bin/python
 
-# every function should return a dictionary mapping the search key to it's returned
-# value as either a list or a dataframe.
-
-# Need to implement getSIDsFromAIDs
-
 import sys
 sys.path.append("./src")
 if sys.version_info[0] < 3:
