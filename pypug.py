@@ -35,27 +35,15 @@ def getAIDsFromGeneID(geneID, usepost=True):
     response = get(url).split('\n')
   return [id.encode(ENCODING) for id in response]
 
-# Should this be function?
-def getAIDsFromGeneIDs(geneIDs, usepost=True):
-  """
-  Returns a list of lists of AIDs in the same order as geneIDs
-  @param geneIDs  The list of geneIDs to search on.
-  """
-  AIDs = []
-  for geneID in geneIDs:
-    AIDs.append(getAIDsFromGeneID(geneID, usepost))
-  return AIDs
-
-# Should this be a function?
 def getAssayFromSIDs(AID, SIDs=[]):
   """
   Returns a pandas DataFrame containing the assay data for AID. This is useful
-  when an assay has more than 10000 associated SIDs and can't be retrieved
-  using getAssayFromAID.  SIDs can be a list of the prefetched SIDs for the
-  assay or it can be an empty list, in which case the SIDs for the given assay
-  will be fetched automatically.
+  when an assay has more than 10000 associated SIDs and can't be retrieved with
+  getAssayFromAID due to PUG data restrictions.  SIDs can be a list of the 
+  prefetched SIDs for the assay or it can be an empty list, in which case the 
+  SIDs for the given assay will be fetched automatically.
   @param AID  The AID to search on.
-  @parma SIDs  The SIDs for the given AID
+  @param SIDs  The SIDs for the given AID
   """
   response = "" 
   pos = 0
@@ -98,29 +86,6 @@ def getAssayDescriptionFromAID(AID):
   url = PROLOG + ("/assay/aid/%s/description/JSON" % AID)
   response = get(url) # needs to be parsed into an object
   return response
-
-# Should this be a function?
-def getAssaysFromAIDs(AIDs, usepost=True):
-  """
-  Returns a dictionary of pandas DataFrames containing the assay data for all 
-  assays mapped to AIDs
-  @param AIDs  The list of AIDs to search on.
-  @param usepost  Boolean value indicating whether post or get should be used.
-  """
-  assays = {}
-  for AID in AIDs:
-    assays[AID] = getAssayFromAID(AID, usepost)
-  return assays
-
-# Should this be a function?
-def getAssaysFromGeneID(geneID):
-  """
-  Returns a dictionary of pandas DataFrames containing the assay data for all 
-  assays with AIDs assocated to geneID mapped to their respective AIDs.
-  @param geneID  The geneID to search on
-  """
-  AIDs = getAIDsFromGeneID(geneID)
-  return getAssaysFromAIDs(AIDs)
 
 def getSIDsFromAID(AID, usepost=True):
   """
