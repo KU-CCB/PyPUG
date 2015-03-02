@@ -1,18 +1,106 @@
 #!/bin/python
 
 import sys
-sys.path.append("./src")
 if sys.version_info[0] < 3:
     from StringIO import StringIO
 else:
     from io import StringIO
-from requestHandler import get, post
-import requestErrors
 import pandas as pd
+import requests
 
 PROLOG = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
 ENCODING = "utf-8"
-PugRestException = requestErrors.PugRestException
+
+
+""" ---------------------------------------------------------------------------
+Error Handling 
+--------------------------------------------------------------------------- """
+
+
+PugRestErrors = {
+  200: { "code": "(none)",                    "message": "Success"},
+  400: { "code": "PugRest.BadRequest",        "message": "Request is improperly formed"},
+  404: { "code": "PugRest.NotFound",          "message": "The input record was not found"},
+  405: { "code": "PugRest.MethodNotAllowed",  "message": "Request not allowed (such as invalid MIME type in the HTTP Accept header)"},
+  504: { "code": "PugRest.Timeout",           "message": "The request timed out, from server overload or too broad a request"},
+  501: { "code": "PugRest.Unimplemented",     "message": "The requested operation has not (yet) been implemented by the server"},
+  500: { "code": "PugRest.ServerError",       "message": "Some problem on the server side (such as a database server down, etc.)"},
+  414: { "code": "Unknown",                   "message": "Unknown"},
+  #500: { "code": "PugRest.Unknown",           "message": "An unknown error occurred"}
+}
+
+# This should be split into many different classes of errors based on PugRestErrors
+class PugRestException(Exception):
+  """
+  Exception thrown when a request to PUG returns with a status code other than
+  200 (assuming the status code is in PugRestErrors)
+  """
+  def __init__(self, *args, **kwargs):
+    self.url = kwargs.pop('url', None)
+    self.code = kwargs.pop('code', None)
+    self.message = kwargs.pop('message', None)
+    self.response = kwargs.pop('response', None)
+    super(PugRestException, self).__init__(args, kwargs)
+
+  def __str__(self):
+    msg = (
+      "--url:      "+self.url+"\n"
+      "--code:     "+self.code+"\n"
+      "--message:  "+self.message+"\n"
+      "--response: "+self.response+"\n")
+    return msg
+
+def handleKeyError(error):
+  sys.stderr.write("[pypug KeyError]\n")
+  sys.stderr.write("--The Pug server returned an unhandled status code:")
+  sys.stderr.write("--This status code is unhandled in pypug.py")
+  sys.stderr.write(e)
+  sys.exit()
+
+
+""" ---------------------------------------------------------------------------
+Requests Wrapper
+--------------------------------------------------------------------------- """
+
+
+def get(url):
+  """
+  Make an HTTP Get request to the PubChem ftp server
+  """
+  response = requests.get(url)
+  if str(response.status_code) != "200":
+    raise PugRestException(response.text, 
+            url=url, 
+            code=PugRestErrors[response.status_code]["code"], 
+            message=PugRestErrors[response.status_code]["message"],
+            response=response.text.strip().replace('\n', ','))
+  else:
+    return response.text.strip()
+
+def post(url, payload):
+  """
+  Make an HTTP Post request to the PubChem ftp server
+  """
+  headers = {'content-type': 'application/x-www-form-urlencoded'}
+  response = requests.post(url, data=payload, headers=headers)
+  if str(response.status_code) != "200":
+    try:
+      raise PugRestException(response.text,
+              url=url, 
+              code=PugRestErrors[response.status_code]["code"], 
+              message=PugRestErrors[response.status_code]["message"],
+              response=response.text.strip().replace('\n', ','),
+              payload=payload)
+    except KeyError as e:
+      handleKeyError(e)
+  else:
+    return response.text.strip()
+
+
+""" ---------------------------------------------------------------------------
+PyPUG API
+--------------------------------------------------------------------------- """
+
 
 def getAIDsFromGeneID(geneID, usepost=True):
   """
@@ -51,7 +139,7 @@ def getAssayFromSIDs(AID, SIDs=[]):
     pos = pos + groupSz + 1
     if len(response) == 0:
       response += post(url, payload)
-    else: 
+    else:
       data = post(url, payload)
       response += data[data.index('\n'):]
   response = StringIO(response.encode(ENCODING))
@@ -78,9 +166,23 @@ def getAssayDescriptionFromAID(AID):
   Return the assay description for a given AID
   @param AID  The AID to search on
   """
-  url = PROLOG + ("/assay/aid/%s/description/JSON" % AID)
+  url = PROLOG + ("/assay/aid/%s/description/ASNT" % AID)
   response = get(url) # needs to be parsed into an object
   return response
+
+def _getCompoundPropertiesFromCID(CID, properties):
+  """
+  Return the compound and its properties identified by CID
+  @param CID  The CID to search on
+  """
+  url = PROLOG + ("/compound/cid/%s/property/%s/CSV" % (CID, ",".join(properties)))
+  response = get(url)
+  return response
+
+def getCanonicalSMILESFromCID(CID):
+  response = _getCompoundPropertiesFromCID(CID, ["CanonicalSMILES"])
+  smiles = response.split('\n')[1].split(',')[1]
+  return smiles
 
 def getSIDsFromAID(AID, usepost=True):
   """
