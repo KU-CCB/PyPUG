@@ -166,7 +166,8 @@ def getAssayDescriptionFromAID(AID):
   Return the assay description for a given AID
   @param AID  The AID to search on
   """
-  url = PROLOG + ("/assay/aid/%s/description/ASNT" % AID)
+  #url = PROLOG + ("/assay/aid/%s/description/ASNT" % AID)
+  url = PROLOG + ("/assay/aid/%s/summary/JSON" % AID) # simplified description
   response = get(url) # needs to be parsed into an object
   return response
 
