@@ -47,8 +47,12 @@ if not os.path.exists(outputDirectory):
 assays = {}
 AIDs = pypug.getAIDsFromGeneID(geneID)
 for AID in AIDs:
-  SIDs = pypug.getSIDsFromAID(AID)
-  assays[AID] = pypug.getAssayFromSIDs(SIDs)
+  try:
+    SIDs = pypug.getSIDsFromAID(AID)
+    assays[AID] = pypug.getAssayFromSIDs(AID, SIDs)
+  except pypug.PugRestException as e:
+    # ignore the pubchem errors for now
+    print e
 
 # Write Inactive data to file
 for aid, data in assays.iteritems():
