@@ -115,4 +115,3 @@ with open(dataFile1, 'r') as infile:
           cnx.commit()
         except mysql.connector.Error as e:
           sys.stderr.write("x failed loading data: %s\n" % e)
-    
