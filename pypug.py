@@ -69,8 +69,7 @@ def get(url):
   """
   response = requests.get(url)
   if str(response.status_code) != "200":
-    raise PugRestException(response.text, 
-            url=url, 
+    raise PugRestException(response.text, url=url, 
             code=PugRestErrors[response.status_code]["code"], 
             message=PugRestErrors[response.status_code]["message"],
             response=response.text.strip().replace('\n', ','))
@@ -85,12 +84,10 @@ def post(url, payload):
   response = requests.post(url, data=payload, headers=headers)
   if str(response.status_code) != "200":
     try:
-      raise PugRestException(response.text,
-              url=url, 
+      raise PugRestException(response.text, payload=payload, url=url,
               code=PugRestErrors[response.status_code]["code"], 
               message=PugRestErrors[response.status_code]["message"],
-              response=response.text.strip().replace('\n', ','),
-              payload=payload)
+              response=response.text.strip().replace('\n', ','))
     except KeyError as e:
       handleKeyError(e)
   else:
