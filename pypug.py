@@ -8,8 +8,14 @@ else:
 import pandas as pd
 import requests
 
+# PUG URL Prolog
 PROLOG = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
+
+# default encoding for strings
 ENCODING = "utf-8"
+
+# Don't report errors
+SILENT = False
 
 
 """ ---------------------------------------------------------------------------
@@ -67,12 +73,16 @@ def get(url):
   """
   Make an HTTP Get request to the PubChem ftp server
   """
+  global SILENT
   response = requests.get(url)
   if str(response.status_code) != "200":
-    raise PugRestException(response.text, url=url, 
-            code=PugRestErrors[response.status_code]["code"], 
-            message=PugRestErrors[response.status_code]["message"],
-            response=response.text.strip().replace('\n', ','))
+    if SILENT:
+      return ""
+    else:
+      raise PugRestException(response.text, url=url,
+              code=PugRestErrors[response.status_code]["code"],
+              message=PugRestErrors[response.status_code]["message"],
+              response=response.text.strip().replace('\n', ','))
   else:
     return response.text.strip()
 
@@ -80,24 +90,39 @@ def post(url, payload):
   """
   Make an HTTP Post request to the PubChem ftp server
   """
+  global SILENT
   headers = {'content-type': 'application/x-www-form-urlencoded'}
   response = requests.post(url, data=payload, headers=headers)
   if str(response.status_code) != "200":
-    try:
-      raise PugRestException(response.text, payload=payload, url=url,
-              code=PugRestErrors[response.status_code]["code"], 
-              message=PugRestErrors[response.status_code]["message"],
-              response=response.text.strip().replace('\n', ','))
-    except KeyError as e:
-      handleKeyError(e)
+    if SILENT:
+      return ""
+    else:
+      try:
+        raise PugRestException(response.text, payload=payload, url=url,
+                code=PugRestErrors[response.status_code]["code"],
+                message=PugRestErrors[response.status_code]["message"],
+                response=response.text.strip().replace('\n', ','))
+      except KeyError as e:
+        handleKeyError(e)
   else:
     return response.text.strip()
+
 
 
 """ ---------------------------------------------------------------------------
 PyPUG API
 --------------------------------------------------------------------------- """
 
+
+def SetSilent(silent):
+  """
+  Sets error reporting on or off. silent should be either True or False. Any 
+  other values will be ignored
+  @param silent  True or False
+  """
+  global SILENT
+  if silent in (True, False):
+    SILENT = silent
 
 def getAIDsFromGeneID(geneID, usepost=True):
   """
