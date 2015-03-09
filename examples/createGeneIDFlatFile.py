@@ -1,7 +1,10 @@
 import sys
+import socket
+if socket.gethostname()[-6:] == "ku.edu":
+	sys.path.append('/usr/lib/python2.6/site-packages/')
 import os
-import ConfigParser
 from datetime import date
+from operator import itemgetter
 import zipfile
 import gzip
 import json
@@ -26,6 +29,7 @@ database version
 
 host, user, passwd, db = sys.argv[1:5]
 geneids = sys.argv[5:]#[1815, 1816]
+print geneids
 
 pypugFile1 = "geneid.aid.pypug.txt"
 pypugFile2 = "geneid.fullassay.pypug.txt"
@@ -55,10 +59,8 @@ with open(ccbFile1, 'w') as outfile:
   cursor = cnx.cursor()
   for i in range(0, len(geneids)):
     outfile.write(">%s\n" % geneids[i])
-    cursor.execute((
-      "SELECT DISTINCT(assay_id) "
-      "FROM Aid2GiGeneidAccessionUniprot "
-      "WHERE gene_id='%s';"), geneids[i])
+    query = "SELECT DISTINCT(assay_id) FROM Aid2GiGeneidAccessionUniprot WHERE gene_id=%s" % geneids[i]
+    cursor.execute(query)
     # Load the list of aids
     aids = map(itemgetter(0), cursor.fetchall())
     for j in range(0, len(aids)):
@@ -87,6 +89,9 @@ while there are still geneids
     output "${aid}\n"
     output "{description}\n"
     output "{CID}\t{SMILES}\t{outcome}\n"
+
+pypug version
+ccb version
 """
 
 # -- PyPug File 2 --
@@ -114,8 +119,8 @@ with open(pypugFile1, 'r') as infile:
           outfile.write("\n");
     sys.stdout.write('\n')
 
-# -- CCB File 2 --
-
+# -- CCB File 2 -- #INCOMPLETE
+"""
 with open(ccbFile1, 'r') as infile:
   cnx = mysql.connector.connect(host=host, user=user, passwd=passwd, db=db, client_flags=[ClientFlag.LOCAL_FILES])
   cursor = cnx.cursor()
@@ -136,32 +141,5 @@ with open(ccbFile1, 'r') as infile:
         "FROM Bioassays "
         "WHERE Bioassays.aid='%s' "
         "AND Substance_id_compound_id.substance_id=Bioassays.substance_id"), aid)
-      print cursor.fetchall()
-
-
-# with open(pypugFile1, 'r') as infile:
-#   with open(pypugFile2, 'w') as outfile:
-#     i = 0
-#     for line in infile:
-#       i += 1
-#       sys.stdout.write("\r> processing lines (%03d)" % i)
-#       sys.stdout.flush()
-#       line = line.rstrip()
-#       if line[0] is '>':
-#         outfile.write("%s\n" % line) # geneid
-#       else:
-#         aid = line
-#         assay = pypug.getAssayFromSIDs(aid)
-#         #description = json.dumps(pypug.getAssayDescriptionFromAID(aid))
-#         outfile.write("$%s\n" % aid)
-#         #outfile.write("%s\n" % description)
-#         for sid, cid, outcome in zip(assay["PUBCHEM_SID"], assay["PUBCHEM_CID"], assay["PUBCHEM_ACTIVITY_OUTCOME"]):
-#           if math.isnan(cid): # cid is unavailable
-#             cid, smiles = "","" # empty values since no cid
-#           else:
-#             smiles = pypug.getCanonicalSMILESFromCID(cid)
-#           outfile.write("%s\t" % sid)
-#           outfile.write("%s\t" % cid)
-#           outfile.write("%s\t" % smiles)
-#           outfile.write("\n");
-#     sys.stdout.write('\n')
+      print(cursor.fetchall())
+"""
