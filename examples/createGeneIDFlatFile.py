@@ -29,7 +29,6 @@ database version
 
 host, user, passwd, db = sys.argv[1:5]
 geneids = sys.argv[5:]#[1815, 1816]
-print geneids
 
 pypugFile1 = "geneid.aid.pypug.txt"
 pypugFile2 = "geneid.fullassay.pypug.txt"
@@ -120,7 +119,7 @@ with open(pypugFile1, 'r') as infile:
     sys.stdout.write('\n')
 
 # -- CCB File 2 -- #INCOMPLETE
-"""
+
 with open(ccbFile1, 'r') as infile:
   cnx = mysql.connector.connect(host=host, user=user, passwd=passwd, db=db, client_flags=[ClientFlag.LOCAL_FILES])
   cursor = cnx.cursor()
@@ -142,4 +141,4 @@ with open(ccbFile1, 'r') as infile:
         "WHERE Bioassays.aid='%s' "
         "AND Substance_id_compound_id.substance_id=Bioassays.substance_id"), aid)
       print(cursor.fetchall())
-"""
+
